@@ -1,0 +1,202 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    background-color: #1e1e1e;
+    color: white;
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+}
+
+.container {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.btn {
+    padding: 12px 20px;
+    margin: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    border-radius: 8px;
+    transition: background 0.3s ease;
+}
+
+.btn:hover {
+    background: #0056b3;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    transition: 0.3s;
+    z-index: 1000;
+}
+
+.room-code-container {
+    color: white;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: bold;
+}
+
+.input-group {
+    margin: 15px;
+}
+
+input {
+    padding: 12px;
+    font-size: 18px;
+    width: 250px;
+    border-radius: 8px;
+    border: none;
+}
+
+#lobby {
+    display: none;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.players-container {
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-block;
+    text-align: center;
+    width: 300px;
+    margin-top: 20px;
+}
+
+.player-name {
+    background: #444;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.host-name {
+    background: #ffcc00;
+    color: black;
+}
+
+.buttons-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.game-container {
+    display: none;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.role-alert {
+    font-weight: bold;
+    margin-top: 20px;
+    font-size: 20px;
+}
+
+.phase-animation {
+    margin-top: 20px;
+}
+
+.phase-animation img {
+    width: 480px;
+    height: 270px;
+}
+
+.chat-box {
+    margin-top: 20px;
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+    height: 200px;
+    width: 500px;
+    overflow-y: scroll;
+    font-size: 16px;
+}
+
+.chat-input {
+    margin-top: 10px;
+    width: 80%;
+}
+
+.voting-container {
+    margin-top: 15px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.vote-btn {
+    margin: 5px;
+    flex: 1 1 auto;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.action-buttons {
+    display: none;
+    margin-top: -20px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.action-buttons button {
+    margin: 5px;
+}
+
+.game-over {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 24px;
+    text-align: center;
+    z-index: 1000;
+}
+
+.win-screen {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 24px;
+    text-align: center;
+    z-index: 1000;
+}
