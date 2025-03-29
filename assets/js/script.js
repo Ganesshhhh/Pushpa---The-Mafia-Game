@@ -102,6 +102,10 @@ function enterLobby(roomCode, playerName) {
             // Only show the start button to the host if there are at least 2 players
             document.getElementById("startGameBtn").style.display = playerName === data.host && sortedPlayers.length >= 2 ? "block" : "none";
 
+            // Check if the game is ongoing
+            if (data.phase === 'night' || data.phase === 'day') {
+                startGame(data.roles, data.phase);
+            }
         }
     });
 
@@ -144,8 +148,6 @@ function enterLobby(roomCode, playerName) {
 function showEliminatedScreen() {
     document.getElementById("gameOver").style.display = "block";
     document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
-    document.getElementById("votingContainer").style.display = "none";
-    document.getElementById("secretActionsContainer").style.display = "none";
 }
 
 // Leave room event
@@ -502,6 +504,8 @@ function showWinScreen(title, message) {
     document.getElementById("winScreen").style.display = "block";
     document.getElementById("votingContainer").style.display = "none";
     document.getElementById("secretActionsContainer").style.display = "none";
+    document.getElementById("gameContainer").style.display = "none";
+    document.getElementById("lobby").style.display = "none";
 }
 
 function checkIfEliminated(player) {
