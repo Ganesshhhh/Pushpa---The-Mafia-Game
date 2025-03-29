@@ -214,6 +214,12 @@ function assignRoles(players) {
 
 // Start the game
 function startGame(roles, phase) {
+    // Check if we have required session data
+    if (!sessionStorage.getItem("roomCode") || !sessionStorage.getItem("playerName")) {
+        console.error("Missing room code or player name");
+        return;
+    }
+
     // Check if player was eliminated
     if (sessionStorage.getItem("wasEliminated") === "true") {
         showEliminatedScreen();
@@ -238,70 +244,122 @@ function startGame(roles, phase) {
     }
 }
 
+function endDayPhase() {
+    console.log("Transitioning from day to night phase");
+    let roomCode = sessionStorage.getItem("roomCode");
+    if (!roomCode) {
+        console.error("No room code found during day phase end");
+        return;
+    }
+
+    // Clear votes and prepare for night phase
+    update(ref(db, `rooms/${roomCode}/votes`), {}).then(() => {
+        update(ref(db, `rooms/${roomCode}`), { 
+            phase: 'night',
+            nightActions: {} // Clear previous night actions
+        }).then(() => {
+            startNightPhase(); // Start new night phase
+        });
+    });
+}
+
 function startNightPhase() {
+    console.log("Starting night phase");
+    
     currentPhase = 'night';
     let roomCode = sessionStorage.getItem("roomCode");
-    let votingContainer = document.getElementById("votingContainer");
-    votingContainer.innerHTML = "";
+    if (!roomCode) {
+        console.error("No room code found in night phase");
+        return;
+    }
+
+    // Clear UI containers
+    document.getElementById("votingContainer").innerHTML = "";
+    document.getElementById("secretActionsContainer").innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
 
     get(ref(db, `rooms/${roomCode}`)).then(snapshot => {
         let data = snapshot.val();
-        if (!data || !data.roles) return;
+        if (!data) {
+            console.error("No room data found");
+            return;
+        }
 
         let playerName = sessionStorage.getItem("playerName");
-        let role = data.roles[playerName];
+        if (!playerName) {
+            console.error("No player name found");
+            return;
+        }
 
-        // Only show actions if player is still in game
-        if (!data.players[playerName]) return;
+        if (!data.players || !data.players[playerName]) {
+            console.log("Player eliminated, skipping actions");
+            return;
+        }
+
+        let role = data.roles[playerName];
+        console.log(`Player role: ${role}`);
 
         document.getElementById("actionButtons").style.display = "block";
         let secretActionsContainer = document.getElementById("secretActionsContainer");
-        secretActionsContainer.innerHTML = "";
 
+        // Create action buttons for each living player (excluding self)
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
-                let actionButton;
-                switch (role) {
-                    case 'Pushpa':
-                        actionButton = createActionButton(`Eliminate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Eliminate', target: target }).then(() => {
-                                alert(`You will eliminate ${target} at night.`);
-                            });
-                        });
-                        break;
-                    case 'Shekhawat':
-                        actionButton = createActionButton(`Investigate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Investigate', target: target }).then(() => {
-                                alert(`You will investigate ${target} at night.`);
-                            });
-                        });
-                        break;
-                    case 'MLA Siddappa':
-                        actionButton = createActionButton(`Save ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Heal', target: target }).then(() => {
-                                alert(`You will try to save ${target} at night.`);
-                            });
-                        });
-                        break;
-                }
+                console.log(`Creating action button for ${target}`);
+                let actionButton = createNightActionButton(role, target, roomCode);
                 if (actionButton) {
                     secretActionsContainer.appendChild(actionButton);
                 }
             }
         });
 
-        update(ref(db, `rooms/${roomCode}`), { phase: 'night' });
+        setTimeout(() => endNightPhase(), 50000);
     });
-
-    setTimeout(() => endNightPhase(), 50000);
 }
 
-function createActionButton(text, action) {
+function createNightActionButton(role, target, roomCode) {
+    let playerName = sessionStorage.getItem("playerName");
     let button = document.createElement("button");
     button.className = "btn";
-    button.innerText = text;
-    button.onclick = action;
+    
+    switch (role) {
+        case 'Pushpa':
+            button.innerText = `Eliminate ${target}`;
+            button.onclick = () => {
+                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                    action: 'Eliminate', 
+                    target: target 
+                }).then(() => {
+                    alert(`You will eliminate ${target} at night.`);
+                });
+            };
+            break;
+        case 'Shekhawat':
+            button.innerText = `Investigate ${target}`;
+            button.onclick = () => {
+                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                    action: 'Investigate', 
+                    target: target 
+                }).then(() => {
+                    alert(`You will investigate ${target} at night.`);
+                });
+            };
+            break;
+        case 'MLA Siddappa':
+            button.innerText = `Save ${target}`;
+            button.onclick = () => {
+                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                    action: 'Heal', 
+                    target: target 
+                }).then(() => {
+                    alert(`You will try to save ${target} at night.`);
+                });
+            };
+            break;
+        default:
+            return null;
+    }
+    
     return button;
 }
 
@@ -313,54 +371,62 @@ function endNightPhase() {
 
 function applyNightActions() {
     let roomCode = sessionStorage.getItem("roomCode");
+    if (!roomCode) {
+        console.error("No room code found during night actions");
+        return;
+    }
+
     let roomRef = ref(db, `rooms/${roomCode}`);
     get(roomRef).then(snapshot => {
         let data = snapshot.val();
-        if (data) {
-            let chatBox = document.getElementById("chatBox");
-            let nightActions = data.nightActions || {};
-            let healedPlayers = new Set();
-
-            // Process healing actions first
-            Object.entries(nightActions).forEach(([player, { action, target }]) => {
-                if (action === 'Heal') {
-                    healedPlayers.add(target);
-                }
-            });
-
-            // Process elimination and investigation actions
-            Object.entries(nightActions).forEach(([player, { action, target }]) => {
-                if (action === 'Eliminate' && !healedPlayers.has(target)) {
-                    let chatRef = ref(db, "rooms/" + roomCode + "/chat");
-                    let newMessageRef = push(chatRef);
-                    set(newMessageRef, { player: "System", message: `${target} was caught in action and killed by Pushpa.` });
-
-                    delete data.players[target];
-                    checkIfEliminated(target);
-                    checkWinConditions(data.players, data.roles);
-                }
-                if (action === 'Investigate') {
-                    if (player === sessionStorage.getItem("playerName")) {
-                        chatBox.innerHTML += `<p>You investigated ${target}, who is ${data.roles[target]}.</p>`;
-                    }
-                }
-                if (action === 'Heal' && healedPlayers.has(target)) {
-                    let chatRef = ref(db, "rooms/" + roomCode + "/chat");
-                    let newMessageRef = push(chatRef);
-                    set(newMessageRef, { player: "System", message: `MLA Siddappa saved ${target} from Pushpa!` });
-                }
-            });
-
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            update(roomRef, {
-                players: data.players,
-                phase: 'day',
-                nightActions: {}
-            }).then(() => {
-                setTimeout(() => startDayPhase(), 3000);
-            });
+        if (!data) {
+            console.error("No room data found during night actions");
+            return;
         }
+
+        let chatBox = document.getElementById("chatBox");
+        let nightActions = data.nightActions || {};
+        let healedPlayers = new Set();
+
+        // Process healing actions first
+        Object.entries(nightActions).forEach(([player, { action, target }]) => {
+            if (action === 'Heal') {
+                healedPlayers.add(target);
+            }
+        });
+
+        // Process elimination and investigation actions
+        Object.entries(nightActions).forEach(([player, { action, target }]) => {
+            if (action === 'Eliminate' && !healedPlayers.has(target)) {
+                let chatRef = ref(db, "rooms/" + roomCode + "/chat");
+                let newMessageRef = push(chatRef);
+                set(newMessageRef, { player: "System", message: `${target} was caught in action and killed by Pushpa.` });
+
+                delete data.players[target];
+                checkIfEliminated(target);
+                checkWinConditions(data.players, data.roles);
+            }
+            if (action === 'Investigate') {
+                if (player === sessionStorage.getItem("playerName")) {
+                    chatBox.innerHTML += `<p>You investigated ${target}, who is ${data.roles[target]}.</p>`;
+                }
+            }
+            if (action === 'Heal' && healedPlayers.has(target)) {
+                let chatRef = ref(db, "rooms/" + roomCode + "/chat");
+                let newMessageRef = push(chatRef);
+                set(newMessageRef, { player: "System", message: `MLA Siddappa saved ${target} from Pushpa!` });
+            }
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        update(roomRef, {
+            players: data.players,
+            phase: 'day',
+            nightActions: {}
+        }).then(() => {
+            setTimeout(() => startDayPhase(), 3000);
+        });
     });
 }
 
@@ -470,7 +536,7 @@ function processVotes() {
             update(roomRef, { votes: {} });
         }, 3000);
 
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        setTimeout(() => endDayPhase(), 3000);
     });
 }
 
