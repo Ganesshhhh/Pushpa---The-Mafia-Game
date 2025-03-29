@@ -397,32 +397,65 @@ function startDayPhase() {
     setTimeout(() => processVotes(), 50000);
 }
 
-function votePlayer(player) {
+function startNightPhase() {
+    currentPhase = 'night';
     let roomCode = sessionStorage.getItem("roomCode");
-    let playerName = sessionStorage.getItem("playerName");
-    
-    // First check if player is still in the game
-    get(ref(db, `rooms/${roomCode}/players/${playerName}`)).then(snapshot => {
-        if (!snapshot.exists()) {
-            alert("You have been eliminated and cannot vote!");
-            return;
-        }
-        
-        // Check if player has already voted
-        get(ref(db, `rooms/${roomCode}/votes/${playerName}`)).then(voteSnapshot => {
-            if (voteSnapshot.exists()) {
-                alert("You have already voted!");
-                return;
-            }
-            
-            // Proceed with voting
-            update(ref(db, `rooms/${roomCode}/votes`), { [playerName]: player }).then(() => {
-                let chatRef = ref(db, "rooms/" + roomCode + "/chat");
-                let newMessageRef = push(chatRef);
-                set(newMessageRef, { player: "System", message: `${playerName} voted for ${player}` });
+    let votingContainer = document.getElementById("votingContainer");
+    votingContainer.innerHTML = "";
+    document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
+
+    // Clear any existing action buttons
+    document.getElementById("actionButtons").style.display = "block";
+    let secretActionsContainer = document.getElementById("secretActionsContainer");
+    secretActionsContainer.innerHTML = "";
+
+    get(ref(db, `rooms/${roomCode}`)).then(snapshot => {
+        let data = snapshot.val();
+        if (!data || !data.roles) return;
+
+        let playerName = sessionStorage.getItem("playerName");
+        let role = data.roles[playerName];
+
+        // Only show actions if player is still in the game
+        if (data.players[playerName]) {
+            Object.keys(data.players).forEach(target => {
+                if (target !== playerName) {
+                    let actionButton;
+                    switch (role) {
+                        case 'Pushpa':
+                            actionButton = createActionButton(`Eliminate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Eliminate', target: target }).then(() => {
+                                    alert(`You will eliminate ${target} at night.`);
+                                });
+                            });
+                            break;
+                        case 'Shekhawat':
+                            actionButton = createActionButton(`Investigate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Investigate', target: target }).then(() => {
+                                    alert(`You will investigate ${target} at night.`);
+                                });
+                            });
+                            break;
+                        case 'MLA Siddappa':
+                            actionButton = createActionButton(`Save ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Heal', target: target }).then(() => {
+                                    alert(`You will try to save ${target} at night.`);
+                                });
+                            });
+                            break;
+                    }
+                    if (actionButton) {
+                        secretActionsContainer.appendChild(actionButton);
+                    }
+                }
             });
-        });
+        }
+
+        update(ref(db, `rooms/${roomCode}`), { phase: 'night' });
     });
+
+    // Add a timeout to end the night phase after 50 seconds
+    setTimeout(() => endNightPhase(), 50000);
 }
 
 function processVotes() {
@@ -465,7 +498,14 @@ function processVotes() {
         }, 3000); // Clear votes after 50 seconds (end of day phase)
 
         // Transition back to the night phase after processing votes
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        setTimeout(() => {
+            update(ref(db, `rooms/${roomCode}`), { 
+                phase: 'night',
+                nightActions: {} // Clear previous night actions
+            }).then(() => {
+                startNightPhase(); // Explicitly start the night phase
+            });
+        }, 3000);
     });
 }
 
