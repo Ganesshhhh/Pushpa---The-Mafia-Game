@@ -102,10 +102,6 @@ function enterLobby(roomCode, playerName) {
             // Only show the start button to the host if there are at least 2 players
             document.getElementById("startGameBtn").style.display = playerName === data.host && sortedPlayers.length >= 2 ? "block" : "none";
 
-            // Check if the game is ongoing
-            if (data.phase === 'night' || data.phase === 'day') {
-                startGame(data.roles, data.phase);
-            }
         }
     });
 
@@ -114,7 +110,7 @@ function enterLobby(roomCode, playerName) {
         let players = snapshot.val();
         if (players) {
             let newPlayers = Object.keys(players);
-            let newPlayer = newPlayers[newPlayers.length - 1];
+            let newPlayer = newPlayers[newPlayers.length + 1];
 
             if (newPlayer) {
                 showPopup(newPlayer + " joined the room!");
