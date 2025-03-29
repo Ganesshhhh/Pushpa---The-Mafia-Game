@@ -146,10 +146,10 @@ function enterLobby(roomCode, playerName) {
 
 // Show eliminated screen
 function showEliminatedScreen() {
-    document.getElementById("votingContainer").style.display = "none";
-    document.getElementById("secretActionsContainer").style.display = "none";
     document.getElementById("gameOver").style.display = "block";
     document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
+    document.getElementById("votingContainer").style.display = "none";
+    document.getElementById("secretActionsContainer").style.display = "none";
 }
 
 // Leave room event
