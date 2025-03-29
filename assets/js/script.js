@@ -355,10 +355,12 @@ function startDayPhase() {
     let votingContainer = document.getElementById("votingContainer");
     votingContainer.innerHTML = "";
 
-    // Ensure the game container is visible
+    // Clear all votes at the start of day phase
+    update(ref(db, `rooms/${roomCode}/votes`), {});
+
+    // Rest of your existing startDayPhase code...
     document.getElementById("gameContainer").style.display = "block";
 
-    // Check if actionButtons and secretActionsContainer exist before manipulating them
     let actionContainer1 = document.getElementById("actionButtons");
     let actionContainer2 = document.getElementById("secretActionsContainer");
 
@@ -377,29 +379,49 @@ function startDayPhase() {
 
         let playerName = sessionStorage.getItem("playerName");
 
-        Object.keys(data.players).forEach(player => {
-            if (player !== playerName) {
-                let voteBtn = createActionButton(`Vote for ${player}`, () => {
-                    votePlayer(player);
-                });
-                votingContainer.appendChild(voteBtn);
-            }
-        });
+        // Only show voting buttons if player is still in the game
+        if (data.players[playerName]) {
+            Object.keys(data.players).forEach(player => {
+                if (player !== playerName) {
+                    let voteBtn = createActionButton(`Vote for ${player}`, () => {
+                        votePlayer(player);
+                    });
+                    votingContainer.appendChild(voteBtn);
+                }
+            });
+        }
 
         update(ref(db, `rooms/${roomCode}`), { phase: 'day' });
     });
 
-    // Add a timeout to process votes after 50 seconds
     setTimeout(() => processVotes(), 50000);
 }
 
 function votePlayer(player) {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
-    update(ref(db, `rooms/${roomCode}/votes`), { [playerName]: player }).then(() => {
-        let chatRef = ref(db, "rooms/" + roomCode + "/chat");
-        let newMessageRef = push(chatRef);
-        set(newMessageRef, { player: "System", message: `${playerName} voted for ${player}` });
+    
+    // First check if player is still in the game
+    get(ref(db, `rooms/${roomCode}/players/${playerName}`)).then(snapshot => {
+        if (!snapshot.exists()) {
+            alert("You have been eliminated and cannot vote!");
+            return;
+        }
+        
+        // Check if player has already voted
+        get(ref(db, `rooms/${roomCode}/votes/${playerName}`)).then(voteSnapshot => {
+            if (voteSnapshot.exists()) {
+                alert("You have already voted!");
+                return;
+            }
+            
+            // Proceed with voting
+            update(ref(db, `rooms/${roomCode}/votes`), { [playerName]: player }).then(() => {
+                let chatRef = ref(db, "rooms/" + roomCode + "/chat");
+                let newMessageRef = push(chatRef);
+                set(newMessageRef, { player: "System", message: `${playerName} voted for ${player}` });
+            });
+        });
     });
 }
 
@@ -494,6 +516,13 @@ function checkIfEliminated(player) {
         document.getElementById("gameContainer").style.display = "none";
         document.getElementById("gameOver").style.display = "block";
         document.getElementById("lobby").style.display = "none";
+        
+        // Remove the player from Firebase immediately
+        let roomCode = sessionStorage.getItem("roomCode");
+        if (roomCode) {
+            remove(ref(db, "rooms/" + roomCode + "/players/" + playerName));
+            remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
+        }
     }
 }
 
