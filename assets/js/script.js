@@ -506,8 +506,6 @@ function showWinScreen(title, message) {
     document.getElementById("winScreen").style.display = "block";
     document.getElementById("votingContainer").style.display = "none";
     document.getElementById("secretActionsContainer").style.display = "none";
-    document.getElementById("gameContainer").style.display = "none";
-    document.getElementById("lobby").style.display = "none";
 }
 
 function checkIfEliminated(player) {
