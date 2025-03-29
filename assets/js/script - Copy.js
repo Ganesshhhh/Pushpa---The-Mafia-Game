@@ -516,8 +516,7 @@ function checkIfEliminated(player) {
         remove(ref(db, "rooms/" + roomCode + "/players/" + playerName));
         remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
         
-        document.getElementById("gameContainer").style.display = "none";
-        document.getElementById("lobby").style.display = "block";
+        document.getElementById("gameContainer").style.display = "block";
         
         sessionStorage.setItem("wasEliminated", "true");
     }
