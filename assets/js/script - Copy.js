@@ -149,7 +149,7 @@ function showEliminatedScreen() {
     document.getElementById("lobby").style.display = "none";
     document.getElementById("gameContainer").style.display = "none";
     document.getElementById("gameOver").style.display = "block";
-    document.getElementById("gameOverMessage").innerText = "You have been eliminated!";
+    document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
 }
 
 // Leave room event
