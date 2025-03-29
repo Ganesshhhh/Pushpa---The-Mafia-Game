@@ -468,9 +468,9 @@ function processVotes() {
 
         setTimeout(() => {
             update(roomRef, { votes: {} });
-        }, 3000);
+        }, 2000);
 
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 2000);
     });
 }
 
