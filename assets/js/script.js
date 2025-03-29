@@ -134,6 +134,15 @@ function enterLobby(roomCode, playerName) {
             showWinScreen(gameOverData.winner + " Wins!", gameOverData.message);
         }
     });
+
+    // Handle phase changes
+    if (data.phase === 'night' && currentPhase !== 'night') {
+        startNightPhase();
+    } 
+    else if (data.phase === 'day' && currentPhase !== 'day') {
+        startDayPhase();
+    }
+    currentPhase = data.phase;
 }
 
 // Leave room event
@@ -228,6 +237,11 @@ function startNightPhase() {
     votingContainer.innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
 
+    // Clear any previous action buttons
+    document.getElementById("actionButtons").style.display = "block";
+    let secretActionsContainer = document.getElementById("secretActionsContainer");
+    secretActionsContainer.innerHTML = "";
+
     get(ref(db, `rooms/${roomCode}`)).then(snapshot => {
         let data = snapshot.val();
         if (!data || !data.roles) return;
@@ -235,46 +249,56 @@ function startNightPhase() {
         let playerName = sessionStorage.getItem("playerName");
         let role = data.roles[playerName];
 
-        document.getElementById("actionButtons").style.display = "block";
-        let secretActionsContainer = document.getElementById("secretActionsContainer");
-        secretActionsContainer.innerHTML = "";
-
-        Object.keys(data.players).forEach(target => {
-            if (target !== playerName) {
-                let actionButton;
-                switch (role) {
-                    case 'Pushpa':
-                        actionButton = createActionButton(`Eliminate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Eliminate', target: target }).then(() => {
-                                alert(`You will eliminate ${target} at night.`);
+        // Only show actions if player is still alive
+        if (data.players && data.players[playerName]) {
+            Object.keys(data.players).forEach(target => {
+                if (target !== playerName) {
+                    let actionButton;
+                    switch (role) {
+                        case 'Pushpa':
+                            actionButton = createActionButton(`Eliminate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                                    action: 'Eliminate', 
+                                    target: target 
+                                }).then(() => {
+                                    alert(`You will eliminate ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
-                    case 'Shekhawat':
-                        actionButton = createActionButton(`Investigate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Investigate', target: target }).then(() => {
-                                alert(`You will investigate ${target} at night.`);
+                            break;
+                        case 'Shekhawat':
+                            actionButton = createActionButton(`Investigate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                                    action: 'Investigate', 
+                                    target: target 
+                                }).then(() => {
+                                    alert(`You will investigate ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
-                    case 'MLA Siddappa':
-                        actionButton = createActionButton(`Save ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Heal', target: target }).then(() => {
-                                alert(`You will try to save ${target} at night.`);
+                            break;
+                        case 'MLA Siddappa':
+                            actionButton = createActionButton(`Save ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
+                                    action: 'Heal', 
+                                    target: target 
+                                }).then(() => {
+                                    alert(`You will try to save ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
+                            break;
+                    }
+                    if (actionButton) {
+                        secretActionsContainer.appendChild(actionButton);
+                    }
                 }
-                if (actionButton) {
-                    secretActionsContainer.appendChild(actionButton);
-                }
-            }
-        });
+            });
+        } else {
+            // Player is dead, hide action buttons
+            document.getElementById("actionButtons").style.display = "none";
+        }
 
         update(ref(db, `rooms/${roomCode}`), { phase: 'night' });
     });
 
-    // Add a timeout to end the night phase after 50 seconds
     setTimeout(() => endNightPhase(), 50000);
 }
 
@@ -444,7 +468,10 @@ function processVotes() {
             let playerToEliminate = playersToEliminate[0];
             let chatRef = ref(db, "rooms/" + roomCode + "/chat");
             let newMessageRef = push(chatRef);
-            set(newMessageRef, { player: "System", message: `${playerToEliminate} has been eliminated by voting.` });
+            set(newMessageRef, { 
+                player: "System", 
+                message: `${playerToEliminate} has been eliminated by voting.` 
+            });
 
             // Remove the eliminated player from the game
             delete data.players[playerToEliminate];
@@ -456,16 +483,23 @@ function processVotes() {
         } else {
             let chatRef = ref(db, "rooms/" + roomCode + "/chat");
             let newMessageRef = push(chatRef);
-            set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
+            set(newMessageRef, { 
+                player: "System", 
+                message: "No one was eliminated due to a tie in voting." 
+            });
         }
 
-        // Clear votes only at the end of the day phase
-        setTimeout(() => {
-            update(roomRef, { votes: {} });
-        }, 3000); // Clear votes after 50 seconds (end of day phase)
+        // Clear votes
+        update(roomRef, { votes: {} });
 
-        // Transition back to the night phase after processing votes
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        // Increment round number and start night phase
+        let newRoundNumber = (data.roundNumber || 0) + 1;
+        update(roomRef, { 
+            phase: 'night',
+            roundNumber: newRoundNumber
+        }).then(() => {
+            startNightPhase(); // Explicitly call startNightPhase after update
+        });
     });
 }
 
