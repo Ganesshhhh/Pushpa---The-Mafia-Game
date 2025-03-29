@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pushpa - The Mafia Game</title>
+    <meta name="title" content="Pushpa - The Mafia Game">
+    <meta name="description" content="This is a game website made by Ganesh"> 
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/style-game.css">
+</head>
+<body>
+    <div class="container" id="home">
+        <h1>Multiplayer Game</h1>
+        <div class="input-group">
+            <input type="text" id="playerName" placeholder="Enter Your Name">
+        </div>
+        <button class="btn" id="hostBtn">Host Room</button>
+        <div class="input-group">
+            <input type="text" id="roomCode" placeholder="Enter Room Code">
+        </div>
+        <button class="btn" id="joinBtn">Join Room</button>
+    </div>
+
+    <div id="lobby">
+        <h2>Lobby</h2>
+        <div class="room-code-container">
+            <span id="roomCodeDisplay"></span>
+        </div>
+        <div class="players-container">
+            <h3 id="hostName"></h3>
+            <div class="players-list" id="playersList"></div>
+        </div>
+        <div class="buttons-container">
+            <button class="btn" id="startGameBtn" style="display:none;">Start Game</button>
+            <button class="btn" id="leaveBtn">Leave Room</button>
+        </div>
+    </div>
+
+    <div class="game-container" id="gameContainer">
+        <div class="role-alert" id="roleAlert"></div>
+        <div class="phase-animation" id="phaseAnimation"></div>
+        <div class="chat-box" id="chatBox"></div>
+        <input type="text" class="chat-input" id="chatInput" placeholder="Type a message">
+        <button class="btn" id="sendMessageBtn">Send</button>
+        <div class="voting-container" id="votingContainer"></div>
+        <div class="action-buttons" id="actionButtons">
+            <h3>Secret Actions</h3>
+            <div id="secretActionsContainer"></div>
+        </div>
+        <button class="btn" id="leaveGameBtn">Leave Game</button>
+    </div>
+
+    <div class="popup" id="playerJoinedPopup"></div>
+
+    <!-- Game Over Screen -->
+    <div class="game-over" id="gameOver">
+        <h2>Game Over</h2>
+        <p>You have been eliminated from the game.</p>
+        <button class="btn" id="returnHomeBtn">Return to Home</button>
+    </div>
+
+    <!-- Win Screen -->
+    <div class="win-screen" id="winScreen">
+        <h2 id="winTitle"></h2>
+        <p id="winMessage"></p>
+        <button class="btn" id="winReturnHomeBtn">Return to Home</button>
+    </div>
+
+    <script type="module" src="./assets/js/script - Copy.js"></script>
+</body>
+</html>
