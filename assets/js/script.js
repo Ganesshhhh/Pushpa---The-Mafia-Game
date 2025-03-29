@@ -110,7 +110,7 @@ function enterLobby(roomCode, playerName) {
         let players = snapshot.val();
         if (players) {
             let newPlayers = Object.keys(players);
-            let newPlayer = newPlayers[newPlayers.length + 1];
+            let newPlayer = newPlayers[newPlayers.length - 1];
 
             if (newPlayer) {
                 showPopup(newPlayer + " joined the room!");
