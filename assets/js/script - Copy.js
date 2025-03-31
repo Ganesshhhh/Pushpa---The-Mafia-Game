@@ -226,10 +226,13 @@ function startNightPhase(roomData = null) {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
-    document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
+    // Clear UI elements
     document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("actionButtons").style.display = "block";
     document.getElementById("secretActionsContainer").innerHTML = "";
+    
+    // Set night phase visuals
+    document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
+    document.getElementById("actionButtons").style.display = "block";
 
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
     
@@ -237,9 +240,11 @@ function startNightPhase(roomData = null) {
         if (!data || !data.roles) return;
 
         let role = data.roles[playerName];
-
+        
+        // Only show actions if player is still alive
         if (!data.players[playerName]) return;
 
+        // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
                 let actionButton;
@@ -274,6 +279,9 @@ function startNightPhase(roomData = null) {
                             });
                         });
                         break;
+                    default:
+                        // Syndicate Members don't have night actions
+                        return;
                 }
                 if (actionButton) {
                     document.getElementById("secretActionsContainer").appendChild(actionButton);
@@ -281,7 +289,10 @@ function startNightPhase(roomData = null) {
             }
         });
 
+        // Set timeout for night phase duration
         setTimeout(() => endNightPhase(), 50000);
+    }).catch(error => {
+        console.error("Error starting night phase:", error);
     });
 }
 
@@ -449,11 +460,14 @@ function processVotes() {
             set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
         }
 
-        update(roomRef, { votes: {} }).then(() => {
-            update(roomRef, { phase: 'night' }).then(() => {
-                get(roomRef).then(updatedSnapshot => {
-                    startNightPhase(updatedSnapshot.val());
-                });
+        // Update phase and votes first
+        update(roomRef, { 
+            votes: {},
+            phase: 'night'
+        }).then(() => {
+            // Then fetch updated data and start night phase
+            get(roomRef).then(updatedSnapshot => {
+                startNightPhase(updatedSnapshot.val());
             });
         });
     });
