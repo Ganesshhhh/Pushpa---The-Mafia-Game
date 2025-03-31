@@ -230,7 +230,7 @@ function startNightPhase(roomData = null) {
     
     // Clear previous UI and listeners
     document.getElementById("votingContainer").innerHTML = "";
-    
+    document.getElementById("secretActionsContainer").innerHTML = "";
     
     // Set night phase visuals
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
