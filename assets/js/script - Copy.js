@@ -406,6 +406,10 @@ function votePlayer(player) {
 function processVotes() {
     let roomCode = sessionStorage.getItem("roomCode");
     let roomRef = ref(db, `rooms/${roomCode}`);
+    
+    // Immediately remove all voting buttons to prevent glitches
+    document.getElementById("votingContainer").innerHTML = "";
+
     get(roomRef).then(snapshot => {
         let data = snapshot.val();
         if (!data || !data.votes) return;
@@ -435,12 +439,11 @@ function processVotes() {
             set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
         }
 
-        // First clear the votes
+        // Clear votes and transition to night phase
         update(roomRef, { votes: {} }).then(() => {
-            // Then after a delay, start the night phase
+            // Wait 2 seconds before starting night phase
             setTimeout(() => {
                 update(roomRef, { phase: 'night' }).then(() => {
-                    // Start night phase after the phase is updated in database
                     startNightPhase();
                 });
             }, 2000);
