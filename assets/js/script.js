@@ -148,6 +148,8 @@ function enterLobby(roomCode, playerName) {
 function showEliminatedScreen() {
     document.getElementById("gameOver").style.display = "block";
     document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
+    document.getElementById("votingContainer").style.display = "none";
+    document.getElementById("secretActionsContainer").style.display = "none";
 }
 
 // Leave room event
@@ -466,9 +468,9 @@ function processVotes() {
 
         setTimeout(() => {
             update(roomRef, { votes: {} });
-        }, 3000);
+        }, 2000);
 
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 2000);
     });
 }
 
@@ -502,8 +504,6 @@ function showWinScreen(title, message) {
     document.getElementById("winTitle").innerText = title;
     document.getElementById("winMessage").innerText = message;
     document.getElementById("winScreen").style.display = "block";
-    document.getElementById("votingContainer").style.display = "none";
-    document.getElementById("secretActionsContainer").style.display = "none";
     document.getElementById("gameContainer").style.display = "none";
     document.getElementById("lobby").style.display = "none";
 }
@@ -516,8 +516,7 @@ function checkIfEliminated(player) {
         remove(ref(db, "rooms/" + roomCode + "/players/" + playerName));
         remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
         
-        document.getElementById("gameContainer").style.display = "none";
-        document.getElementById("lobby").style.display = "block";
+        document.getElementById("gameOver").style.display = "block";
         
         sessionStorage.setItem("wasEliminated", "true");
     }
