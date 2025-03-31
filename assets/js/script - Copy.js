@@ -230,7 +230,7 @@ function startNightPhase(roomData = null) {
     
     // Clear previous UI and listeners
     document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("secretActionsContainer").innerHTML = "";
+    
     
     // Set night phase visuals
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
@@ -244,7 +244,7 @@ function startNightPhase(roomData = null) {
         actionButtonsCreated = true;
         let role = data.roles[playerName];
         let container = document.getElementById("secretActionsContainer");
-        
+        container.innerHTML = ""; // Clear any existing buttons
         
         // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
