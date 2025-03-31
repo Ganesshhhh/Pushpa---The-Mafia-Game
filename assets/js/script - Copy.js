@@ -176,7 +176,11 @@ document.getElementById("startGameBtn").addEventListener("click", function() {
             if (data) {
                 players = Object.keys(data.players);
                 assignRoles(players);
-                update(ref(db, "rooms/" + roomCode), { phase: 'night', roles: roles, roundNumber: 1 });
+                update(ref(db, "rooms/" + roomCode), { 
+                    phase: 'night', 
+                    roles: roles, 
+                    roundNumber: 1 
+                });
                 startGame(roles, 'night');
             }
         });
@@ -225,16 +229,16 @@ function startGame(roles, phase) {
 function startNightPhase(roomData = null) {
     currentPhase = 'night';
     actionButtonsCreated = false;
+    clearTimeout(nightPhaseTimeout);
+    
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
-    // Clear previous UI and listeners
     document.getElementById("votingContainer").innerHTML = "";
     document.getElementById("secretActionsContainer").innerHTML = "";
-    
-    // Set night phase visuals
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
     document.getElementById("actionButtons").style.display = "block";
+    document.getElementById("secretActionsContainer").style.display = "block";
 
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
     
@@ -244,9 +248,7 @@ function startNightPhase(roomData = null) {
         actionButtonsCreated = true;
         let role = data.roles[playerName];
         let container = document.getElementById("secretActionsContainer");
-        container.innerHTML = ""; // Clear any existing buttons
         
-        // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
                 let button = document.createElement("button");
@@ -299,8 +301,6 @@ function startNightPhase(roomData = null) {
             }
         });
 
-        // Clear any existing timeout and set new one
-        clearTimeout(nightPhaseTimeout);
         nightPhaseTimeout = setTimeout(() => {
             if (currentPhase === 'night') {
                 endNightPhase();
@@ -309,22 +309,11 @@ function startNightPhase(roomData = null) {
     });
 }
 
-function createActionButton(text, action) {
-    let button = document.createElement("button");
-    button.className = "btn night-action-btn";
-    button.innerText = text;
-    button.onclick = action;
-    return button;
-}
-
 function endNightPhase() {
     if (currentPhase !== 'night') return;
     
     currentPhase = 'transition';
-    let roomCode = sessionStorage.getItem("roomCode");
-    const phaseRef = ref(db, `rooms/${roomCode}/phase`);
-    onValue(phaseRef, () => {}, { onlyOnce: true });
-    
+    clearTimeout(nightPhaseTimeout);
     applyNightActions();
 }
 
@@ -371,11 +360,13 @@ function applyNightActions() {
             update(roomRef, {
                 players: data.players,
                 phase: 'day',
-                nightActions: {}
+                nightActions: {},
+                roundNumber: data.roundNumber + 1
             }).then(() => {
-                get(roomRef).then(updatedSnapshot => {
-                    setTimeout(() => startDayPhase(updatedSnapshot.val()), 3000);
-                });
+                setTimeout(() => {
+                    document.getElementById("secretActionsContainer").style.display = "none";
+                    startDayPhase();
+                }, 3000);
             });
         }
     });
@@ -392,6 +383,7 @@ function startDayPhase(roomData = null) {
     document.getElementById("gameContainer").style.display = "block";
     document.getElementById("actionButtons").style.display = "none";
     document.getElementById("secretActionsContainer").innerHTML = "";
+    document.getElementById("secretActionsContainer").style.display = "none";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/dayy.gif" alt="Day Phase">';
 
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
@@ -404,9 +396,12 @@ function startDayPhase(roomData = null) {
         if (data.players[playerName]) {
             Object.keys(data.players).forEach(player => {
                 if (player !== playerName) {
-                    let voteBtn = createActionButton(`Vote for ${player}`, () => {
+                    let voteBtn = document.createElement("button");
+                    voteBtn.className = "btn";
+                    voteBtn.innerText = `Vote for ${player}`;
+                    voteBtn.onclick = () => {
                         votePlayer(player);
-                    });
+                    };
                     votingContainer.appendChild(voteBtn);
                 }
             });
