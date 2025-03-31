@@ -244,7 +244,7 @@ function startNightPhase(roomData = null) {
         actionButtonsCreated = true;
         let role = data.roles[playerName];
         let container = document.getElementById("secretActionsContainer");
-        container.innerHTML = ""; // Clear any existing buttons
+        
         
         // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
