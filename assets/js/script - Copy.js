@@ -15,6 +15,7 @@ let rolePopupDisplayed = false;
 let roundNumber = 0;
 let nightPhaseTimeout = null;
 let actionButtonsCreated = false;
+let isInitializingNightPhase = false;
 
 // Event listener to host a room
 document.getElementById("hostBtn").addEventListener("click", function() {
@@ -227,6 +228,10 @@ function startGame(roles, phase) {
 }
 
 function startNightPhase(roomData = null) {
+    if (currentPhase === 'night' && actionButtonsCreated) return;
+    if (isInitializingNightPhase) return;
+    
+    isInitializingNightPhase = true;
     currentPhase = 'night';
     actionButtonsCreated = false;
     clearTimeout(nightPhaseTimeout);
@@ -243,11 +248,23 @@ function startNightPhase(roomData = null) {
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
     
     fetchData.then(data => {
-        if (!data || !data.roles || !data.players[playerName] || actionButtonsCreated) return;
+        if (!data || !data.roles || !data.players[playerName]) {
+            isInitializingNightPhase = false;
+            if (data && !data.players[playerName]) {
+                showEliminatedScreen();
+            }
+            return;
+        }
+        
+        if (actionButtonsCreated) {
+            isInitializingNightPhase = false;
+            return;
+        }
         
         actionButtonsCreated = true;
         let role = data.roles[playerName];
         let container = document.getElementById("secretActionsContainer");
+        container.innerHTML = "";
         
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
@@ -306,6 +323,11 @@ function startNightPhase(roomData = null) {
                 endNightPhase();
             }
         }, 50000);
+        
+        isInitializingNightPhase = false;
+    }).catch(error => {
+        console.error("Error initializing night phase:", error);
+        isInitializingNightPhase = false;
     });
 }
 
@@ -314,6 +336,8 @@ function endNightPhase() {
     
     currentPhase = 'transition';
     clearTimeout(nightPhaseTimeout);
+    document.getElementById("secretActionsContainer").innerHTML = "";
+    actionButtonsCreated = false;
     applyNightActions();
 }
 
