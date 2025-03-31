@@ -228,6 +228,10 @@ function startNightPhase() {
     votingContainer.innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
 
+    // Clear previous action buttons
+    document.getElementById("actionButtons").innerHTML = "";
+    document.getElementById("secretActionsContainer").innerHTML = "";
+
     get(ref(db, `rooms/${roomCode}`)).then(snapshot => {
         let data = snapshot.val();
         if (!data || !data.roles) return;
@@ -235,46 +239,51 @@ function startNightPhase() {
         let playerName = sessionStorage.getItem("playerName");
         let role = data.roles[playerName];
 
-        document.getElementById("actionButtons").style.display = "block";
-        let secretActionsContainer = document.getElementById("secretActionsContainer");
-        secretActionsContainer.innerHTML = "";
+        // Only show action buttons for special roles
+        if (role === 'Pushpa' || role === 'Shekhawat' || role === 'MLA Siddappa') {
+            document.getElementById("actionButtons").style.display = "block";
+            let secretActionsContainer = document.getElementById("secretActionsContainer");
+            secretActionsContainer.innerHTML = "";
 
-        Object.keys(data.players).forEach(target => {
-            if (target !== playerName) {
-                let actionButton;
-                switch (role) {
-                    case 'Pushpa':
-                        actionButton = createActionButton(`Eliminate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Eliminate', target: target }).then(() => {
-                                alert(`You will eliminate ${target} at night.`);
+            Object.keys(data.players).forEach(target => {
+                if (target !== playerName) {
+                    let actionButton;
+                    switch (role) {
+                        case 'Pushpa':
+                            actionButton = createActionButton(`Eliminate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Eliminate', target: target }).then(() => {
+                                    alert(`You will eliminate ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
-                    case 'Shekhawat':
-                        actionButton = createActionButton(`Investigate ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Investigate', target: target }).then(() => {
-                                alert(`You will investigate ${target} at night.`);
+                            break;
+                        case 'Shekhawat':
+                            actionButton = createActionButton(`Investigate ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Investigate', target: target }).then(() => {
+                                    alert(`You will investigate ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
-                    case 'MLA Siddappa':
-                        actionButton = createActionButton(`Save ${target}`, () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Heal', target: target }).then(() => {
-                                alert(`You will try to save ${target} at night.`);
+                            break;
+                        case 'MLA Siddappa':
+                            actionButton = createActionButton(`Save ${target}`, () => {
+                                update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { action: 'Heal', target: target }).then(() => {
+                                    alert(`You will try to save ${target} at night.`);
+                                });
                             });
-                        });
-                        break;
+                            break;
+                    }
+                    if (actionButton) {
+                        secretActionsContainer.appendChild(actionButton);
+                    }
                 }
-                if (actionButton) {
-                    secretActionsContainer.appendChild(actionButton);
-                }
-            }
-        });
+            });
+        } else {
+            // Hide action buttons for syndicate members
+            document.getElementById("actionButtons").style.display = "none";
+        }
 
         update(ref(db, `rooms/${roomCode}`), { phase: 'night' });
     });
 
-    // Add a timeout to end the night phase after 50 seconds
     setTimeout(() => endNightPhase(), 50000);
 }
 
@@ -424,11 +433,9 @@ function processVotes() {
             let newMessageRef = push(chatRef);
             set(newMessageRef, { player: "System", message: `${playerToEliminate} has been eliminated by voting.` });
 
-            // Remove the eliminated player from the game
             delete data.players[playerToEliminate];
             update(roomRef, { players: data.players });
 
-            // Check if the current player is eliminated
             checkIfEliminated(playerToEliminate);
             checkWinConditions(data.players, data.roles);
         } else {
@@ -437,13 +444,13 @@ function processVotes() {
             set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
         }
 
-        // Clear votes only at the end of the day phase
-        setTimeout(() => {
-            update(roomRef, { votes: {} });
-        }, 3000); // Clear votes after 50 seconds (end of day phase)
-
-        // Transition back to the night phase after processing votes
-        setTimeout(() => update(ref(db, `rooms/${roomCode}`), { phase: 'night' }), 3000);
+        // Clear votes and transition to night phase
+        update(roomRef, { 
+            votes: {},
+            phase: 'night'  // Ensure phase is set to night
+        }).then(() => {
+            startNightPhase();  // Explicitly start night phase
+        });
     });
 }
 
