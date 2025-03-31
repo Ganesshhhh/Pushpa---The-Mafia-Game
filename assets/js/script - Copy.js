@@ -309,14 +309,6 @@ function startNightPhase(roomData = null) {
     });
 }
 
-function createActionButton(text, action) {
-    let button = document.createElement("button");
-    button.className = "btn night-action-btn";
-    button.innerText = text;
-    button.onclick = action;
-    return button;
-}
-
 function endNightPhase() {
     if (currentPhase !== 'night') return;
     
