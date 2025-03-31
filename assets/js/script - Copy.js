@@ -223,89 +223,118 @@ function startGame(roles, phase) {
 }
 
 function startNightPhase(roomData = null) {
+    // Clear any existing phase listeners and timeouts
+    if (window.nightPhaseListener) {
+        window.nightPhaseListener(); // Unsubscribe previous listener
+    }
+    clearTimeout(nightPhaseTimeout);
+
+    // Set current phase and mark buttons as not created yet
     currentPhase = 'night';
     actionButtonsCreated = false;
-    let roomCode = sessionStorage.getItem("roomCode");
-    let playerName = sessionStorage.getItem("playerName");
-    
-    // Clear previous UI and listeners
-    document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("secretActionsContainer").innerHTML = "";
-    
-    // Set night phase visuals
+
+    const roomCode = sessionStorage.getItem("roomCode");
+    const playerName = sessionStorage.getItem("playerName");
+    const container = document.getElementById("secretActionsContainer");
+
+    // Clear previous UI
+    container.innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
     document.getElementById("actionButtons").style.display = "block";
 
-    const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
-    
-    fetchData.then(data => {
-        if (!data || !data.roles || !data.players[playerName] || actionButtonsCreated) return;
+    // Function to create and handle action buttons
+    const createNightActionButtons = (data) => {
+        if (!data || !data.players || !data.roles || actionButtonsCreated) return;
         
+        const role = data.roles[playerName];
+        if (!role) return;
+
         actionButtonsCreated = true;
-        let role = data.roles[playerName];
-        let container = document.getElementById("secretActionsContainer");
         container.innerHTML = ""; // Clear any existing buttons
-        
-        // Create action buttons for each target
+
+        // Create buttons for each potential target
         Object.keys(data.players).forEach(target => {
-            if (target !== playerName) {
-                let button = document.createElement("button");
-                button.className = "btn";
+            if (target === playerName) return;
+
+            const button = document.createElement("button");
+            button.className = "btn night-action-btn";
+            
+            switch (role) {
+                case 'Pushpa':
+                    button.textContent = `Eliminate ${target}`;
+                    button.onclick = () => {
+                        set(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), {
+                            action: 'Eliminate',
+                            target: target
+                        }).then(() => {
+                            button.disabled = true;
+                            alert(`You will eliminate ${target} tonight.`);
+                        });
+                    };
+                    break;
                 
-                switch (role) {
-                    case 'Pushpa':
-                        button.innerText = `Eliminate ${target}`;
-                        button.onclick = () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
-                                action: 'Eliminate', 
-                                target: target 
-                            }).then(() => {
-                                alert(`You will eliminate ${target} at night.`);
-                                button.disabled = true;
-                            });
-                        };
-                        break;
-                    case 'Shekhawat':
-                        button.innerText = `Investigate ${target}`;
-                        button.onclick = () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
-                                action: 'Investigate', 
-                                target: target 
-                            }).then(() => {
-                                alert(`You will investigate ${target} at night.`);
-                                button.disabled = true;
-                            });
-                        };
-                        break;
-                    case 'MLA Siddappa':
-                        button.innerText = `Save ${target}`;
-                        button.onclick = () => {
-                            update(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), { 
-                                action: 'Heal', 
-                                target: target 
-                            }).then(() => {
-                                alert(`You will try to save ${target} at night.`);
-                                button.disabled = true;
-                            });
-                        };
-                        break;
-                    default:
-                        return;
-                }
+                case 'Shekhawat':
+                    button.textContent = `Investigate ${target}`;
+                    button.onclick = () => {
+                        set(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), {
+                            action: 'Investigate',
+                            target: target
+                        }).then(() => {
+                            button.disabled = true;
+                            alert(`You will investigate ${target} tonight.`);
+                        });
+                    };
+                    break;
                 
-                if (button.innerText) {
-                    container.appendChild(button);
-                }
+                case 'MLA Siddappa':
+                    button.textContent = `Save ${target}`;
+                    button.onclick = () => {
+                        set(ref(db, `rooms/${roomCode}/nightActions/${playerName}`), {
+                            action: 'Heal',
+                            target: target
+                        }).then(() => {
+                            button.disabled = true;
+                            alert(`You will attempt to save ${target} tonight.`);
+                        });
+                    };
+                    break;
+                
+                default:
+                    return; // No buttons for Syndicate Members
+            }
+
+            if (button.textContent) {
+                container.appendChild(button);
             }
         });
+    };
 
-        // Clear any existing timeout and set new one
-        clearTimeout(nightPhaseTimeout);
-        nightPhaseTimeout = setTimeout(() => {
-            if (currentPhase === 'night') {
-                endNightPhase();
+    // Get room data either from parameter or Firebase
+    if (roomData) {
+        createNightActionButtons(roomData);
+    } else {
+        const roomRef = ref(db, `rooms/${roomCode}`);
+        window.nightPhaseListener = onValue(roomRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.phase === 'night') {
+                createNightActionButtons(data);
             }
-        }, 50000);
+        }, { onlyOnce: true });
+    }
+
+    // Set phase timeout (50 seconds for night phase)
+    nightPhaseTimeout = setTimeout(() => {
+        if (currentPhase === 'night') {
+            endNightPhase();
+        }
+    }, 50000);
+
+    // Additional listener to prevent premature phase changes
+    const phaseRef = ref(db, `rooms/${roomCode}/phase`);
+    onValue(phaseRef, (snapshot) => {
+        if (snapshot.val() !== 'night') {
+            clearTimeout(nightPhaseTimeout);
+        }
     });
 }
 
