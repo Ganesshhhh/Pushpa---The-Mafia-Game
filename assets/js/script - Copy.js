@@ -517,6 +517,9 @@ function checkIfEliminated(player) {
         remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
         
         document.getElementById("gameOver").style.display = "block";
+        document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
+        document.getElementById("votingContainer").style.display = "none";
+        document.getElementById("secretActionsContainer").style.display = "none";
         
         sessionStorage.setItem("wasEliminated", "true");
     }
