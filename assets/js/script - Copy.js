@@ -336,7 +336,7 @@ function endNightPhase() {
     
     currentPhase = 'transition';
     clearTimeout(nightPhaseTimeout);
-    actionButtonsCreated = false;
+    actionButtonsCreated = true;
     applyNightActions();
 }
 
