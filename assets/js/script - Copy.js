@@ -513,13 +513,14 @@ function checkIfEliminated(player) {
     if (player === playerName) {
         let roomCode = sessionStorage.getItem("roomCode");
         
-        remove(ref(db, "rooms/" + roomCode + "/players/" + playerName));
-        remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
-        
         document.getElementById("gameOver").style.display = "block";
         document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
         document.getElementById("votingContainer").style.display = "none";
         document.getElementById("secretActionsContainer").style.display = "none";
+
+                
+        remove(ref(db, "rooms/" + roomCode + "/players/" + playerName));
+        remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
         
         sessionStorage.setItem("wasEliminated", "true");
     }
