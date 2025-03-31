@@ -435,12 +435,15 @@ function processVotes() {
             set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
         }
 
-        // Clear votes and transition to night phase
-        update(roomRef, { 
-            votes: {},
-            phase: 'night'  // Ensure phase is set to night
-        }).then(() => {
-            startNightPhase();  // Explicitly start night phase
+        // First clear the votes
+        update(roomRef, { votes: {} }).then(() => {
+            // Then after a delay, start the night phase
+            setTimeout(() => {
+                update(roomRef, { phase: 'night' }).then(() => {
+                    // Start night phase after the phase is updated in database
+                    startNightPhase();
+                });
+            }, 2000);
         });
     });
 }
