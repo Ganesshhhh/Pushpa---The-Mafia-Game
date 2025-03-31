@@ -13,9 +13,10 @@ let players = {};
 let nightActions = {};
 let rolePopupDisplayed = false;
 let roundNumber = 0;
+let nightPhaseTimeout = null;
 
 // Event listener to host a room
-document.getElementById("hostBtn").addEventListener("click", function () {
+document.getElementById("hostBtn").addEventListener("click", function() {
     let playerName = document.getElementById("playerName").value;
     if (!playerName) return alert("Enter your name!");
     let roomCode = Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -35,7 +36,7 @@ document.getElementById("hostBtn").addEventListener("click", function () {
 });
 
 // Event listener to join a room
-document.getElementById("joinBtn").addEventListener("click", function () {
+document.getElementById("joinBtn").addEventListener("click", function() {
     let roomCode = document.getElementById("roomCode").value.trim();
     let playerName = document.getElementById("playerName").value.trim();
     if (!roomCode || !playerName) return alert("Enter name and room code!");
@@ -59,7 +60,6 @@ document.getElementById("joinBtn").addEventListener("click", function () {
     });
 });
 
-// Enter lobby and display players
 function enterLobby(roomCode, playerName) {
     if (sessionStorage.getItem("wasEliminated") === "true") {
         showEliminatedScreen();
@@ -140,7 +140,7 @@ function showEliminatedScreen() {
     document.getElementById("secretActionsContainer").style.display = "none";
 }
 
-document.getElementById("leaveBtn").addEventListener("click", function () {
+document.getElementById("leaveBtn").addEventListener("click", function() {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     if (roomCode && playerName) {
@@ -152,7 +152,7 @@ document.getElementById("leaveBtn").addEventListener("click", function () {
     }
 });
 
-document.getElementById("leaveGameBtn").addEventListener("click", function () {
+document.getElementById("leaveGameBtn").addEventListener("click", function() {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     if (roomCode && playerName) {
@@ -165,7 +165,7 @@ document.getElementById("leaveGameBtn").addEventListener("click", function () {
     }
 });
 
-document.getElementById("startGameBtn").addEventListener("click", function () {
+document.getElementById("startGameBtn").addEventListener("click", function() {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     if (roomCode && playerName) {
@@ -226,13 +226,10 @@ function startNightPhase(roomData = null) {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
-    // Clear UI elements
-    document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("secretActionsContainer").innerHTML = "";
-    
-    // Set night phase visuals
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
+    document.getElementById("votingContainer").innerHTML = "";
     document.getElementById("actionButtons").style.display = "block";
+    document.getElementById("secretActionsContainer").innerHTML = "";
 
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
     
@@ -241,10 +238,8 @@ function startNightPhase(roomData = null) {
 
         let role = data.roles[playerName];
         
-        // Only show actions if player is still alive
         if (!data.players[playerName]) return;
 
-        // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
                 let actionButton;
@@ -279,9 +274,6 @@ function startNightPhase(roomData = null) {
                             });
                         });
                         break;
-                    default:
-                        // Syndicate Members don't have night actions
-                        return;
                 }
                 if (actionButton) {
                     document.getElementById("secretActionsContainer").appendChild(actionButton);
@@ -289,22 +281,21 @@ function startNightPhase(roomData = null) {
             }
         });
 
-        // Set timeout for night phase duration
-        setTimeout(() => endNightPhase(), 50000);
-    }).catch(error => {
-        console.error("Error starting night phase:", error);
+        clearTimeout(nightPhaseTimeout);
+        nightPhaseTimeout = setTimeout(() => endNightPhase(), 50000);
     });
 }
 
 function createActionButton(text, action) {
     let button = document.createElement("button");
-    button.className = "btn";
+    button.className = "btn night-action-btn";
     button.innerText = text;
     button.onclick = action;
     return button;
 }
 
 function endNightPhase() {
+    if (currentPhase !== 'night') return;
     currentPhase = 'day';
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/dayy.gif" alt="Day Phase">';
     applyNightActions();
@@ -424,6 +415,8 @@ function votePlayer(player) {
 }
 
 function processVotes() {
+    clearTimeout(nightPhaseTimeout);
+    
     let roomCode = sessionStorage.getItem("roomCode");
     let roomRef = ref(db, `rooms/${roomCode}`);
     
@@ -460,14 +453,11 @@ function processVotes() {
             set(newMessageRef, { player: "System", message: "No one was eliminated due to a tie in voting." });
         }
 
-        // Update phase and votes first
-        update(roomRef, { 
-            votes: {},
-            phase: 'night'
-        }).then(() => {
-            // Then fetch updated data and start night phase
-            get(roomRef).then(updatedSnapshot => {
-                startNightPhase(updatedSnapshot.val());
+        update(roomRef, { votes: {} }).then(() => {
+            update(roomRef, { phase: 'night' }).then(() => {
+                get(roomRef).then(updatedSnapshot => {
+                    startNightPhase(updatedSnapshot.val());
+                });
             });
         });
     });
@@ -524,7 +514,7 @@ function checkIfEliminated(player) {
     }
 }
 
-document.getElementById("returnHomeBtn").addEventListener("click", function () {
+document.getElementById("returnHomeBtn").addEventListener("click", function() {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
@@ -536,12 +526,12 @@ document.getElementById("returnHomeBtn").addEventListener("click", function () {
     location.reload();
 });
 
-document.getElementById("winReturnHomeBtn").addEventListener("click", function () {
+document.getElementById("winReturnHomeBtn").addEventListener("click", function() {
     sessionStorage.clear();
     location.reload();
 });
 
-document.getElementById("sendMessageBtn").addEventListener("click", function () {
+document.getElementById("sendMessageBtn").addEventListener("click", function() {
     let message = document.getElementById("chatInput").value;
     if (message) {
         let roomCode = sessionStorage.getItem("roomCode");
