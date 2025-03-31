@@ -228,7 +228,7 @@ function startNightPhase(roomData = null) {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
-    // Clear previous UI
+    // Clear previous UI and listeners
     document.getElementById("votingContainer").innerHTML = "";
     document.getElementById("secretActionsContainer").innerHTML = "";
     
@@ -243,6 +243,8 @@ function startNightPhase(roomData = null) {
         
         actionButtonsCreated = true;
         let role = data.roles[playerName];
+        let container = document.getElementById("secretActionsContainer");
+        container.innerHTML = ""; // Clear any existing buttons
         
         // Create action buttons for each target
         Object.keys(data.players).forEach(target => {
@@ -292,7 +294,7 @@ function startNightPhase(roomData = null) {
                 }
                 
                 if (button.innerText) {
-                    document.getElementById("secretActionsContainer").appendChild(button);
+                    container.appendChild(button);
                 }
             }
         });
@@ -304,14 +306,6 @@ function startNightPhase(roomData = null) {
                 endNightPhase();
             }
         }, 50000);
-        
-        // Add phase listener
-        const phaseRef = ref(db, `rooms/${roomCode}/phase`);
-        onValue(phaseRef, (snapshot) => {
-            if (snapshot.val() !== 'night') {
-                clearTimeout(nightPhaseTimeout);
-            }
-        });
     });
 }
 
