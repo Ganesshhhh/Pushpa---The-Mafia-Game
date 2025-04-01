@@ -109,15 +109,18 @@ function enterLobby(roomCode, playerName) {
         }
     });
 
+    let previousPlayers = {};
     onValue(ref(db, "rooms/" + roomCode + "/players"), (snapshot) => {
-        let players = snapshot.val();
-        if (players) {
-            let newPlayers = Object.keys(players);
-            let newPlayer = newPlayers[newPlayers.length - 1];
-            if (newPlayer) {
-                showPopup(newPlayer + " joined the room!");
+        const currentPlayers = snapshot.val() || {};
+        
+        // Check for new players
+        Object.keys(currentPlayers).forEach(player => {
+            if (!previousPlayers[player] && currentPhase === 'lobby') {
+                showPopup(`${player} joined the room!`);
             }
-        }
+        });
+        
+        previousPlayers = {...currentPlayers};
     });
 
     onValue(ref(db, "rooms/" + roomCode + "/chat"), (snapshot) => {
