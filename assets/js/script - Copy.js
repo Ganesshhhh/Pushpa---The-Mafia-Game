@@ -137,7 +137,7 @@ function enterLobby(roomCode, playerName) {
 
 function showEliminatedScreen() {
     document.getElementById("gameOver").style.display = "block";
-    document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
+    document.getElementById("gameOverMessage").innerText = "You have been eliminated!";
     document.getElementById("votingContainer").style.display = "none";
     document.getElementById("secretActionsContainer").style.display = "none";
 }
