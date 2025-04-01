@@ -109,16 +109,23 @@ function enterLobby(roomCode, playerName) {
         }
     });
 
-    let previousPlayers = {};
+    let initialPlayersLoaded = false;
     onValue(ref(db, "rooms/" + roomCode + "/players"), (snapshot) => {
         const currentPlayers = snapshot.val() || {};
         
-        // Check for new players
-        Object.keys(currentPlayers).forEach(player => {
-            if (!previousPlayers[player] && currentPhase === 'lobby') {
-                showPopup(`${player} joined the room!`);
-            }
-        });
+        if (!initialPlayersLoaded) {
+            // First load - don't show popups for existing players
+            initialPlayersLoaded = true;
+        } else {
+            // Check for new players
+            const myName = sessionStorage.getItem("playerName");
+            Object.keys(currentPlayers).forEach(player => {
+                if (!previousPlayers[player] && player !== myName) {
+                    // Only show popup if someone else joined
+                    showPopup(`${player} joined the room!`);
+                }
+            });
+        }
         
         previousPlayers = {...currentPlayers};
     });
