@@ -109,15 +109,25 @@ function enterLobby(roomCode, playerName) {
         }
     });
 
+    let previousPlayerCount = 0;
     onValue(ref(db, "rooms/" + roomCode + "/players"), (snapshot) => {
-        let players = snapshot.val();
-        if (players) {
-            let newPlayers = Object.keys(players);
-            let newPlayer = newPlayers[newPlayers.length - 1];
-            if (newPlayer) {
-                showPopup(newPlayer + " joined the room!");
-            }
+        const currentPlayers = snapshot.val() || {};
+        const currentPlayerCount = Object.keys(currentPlayers).length;
+        
+        // Only show join notifications when count increases and we're in lobby phase
+        if (currentPlayerCount > previousPlayerCount && currentPhase === 'lobby') {
+            const newPlayers = Object.keys(currentPlayers)
+                .filter(player => !players[player]);
+            
+            newPlayers.forEach(player => {
+                if (player !== sessionStorage.getItem("playerName")) {
+                    showPopup(`${player} joined the room!`);
+                }
+            });
         }
+        
+        players = currentPlayers;
+        previousPlayerCount = currentPlayerCount;
     });
 
     onValue(ref(db, "rooms/" + roomCode + "/chat"), (snapshot) => {
