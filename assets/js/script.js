@@ -82,15 +82,10 @@ function enterLobby(roomCode, playerName) {
             document.getElementById("hostName").innerText = "Host: " + data.host;
             let playersList = document.getElementById("playersList");
             playersList.innerHTML = "";
-    
-            // Create array with host first, then other players in the order they joined
-            let sortedPlayers = [data.host];
-            Object.keys(data.players).forEach(player => {
-                if (player !== data.host) {
-                    sortedPlayers.push(player);
-                }
-            });
-    
+
+            let sortedPlayers = Object.keys(data.players);
+            sortedPlayers.sort((a, b) => (a === data.host ? -1 : b === data.host ? 1 : 0));
+
             sortedPlayers.forEach(player => {
                 let div = document.createElement("div");
                 div.className = "player-name";
@@ -100,9 +95,9 @@ function enterLobby(roomCode, playerName) {
                 div.innerText = player;
                 playersList.appendChild(div);
             });
-    
+
             document.getElementById("startGameBtn").style.display = playerName === data.host && sortedPlayers.length >= 2 ? "block" : "none";
-    
+
             if (data.phase === 'night' || data.phase === 'day') {
                 startGame(data.roles, data.phase);
             }
@@ -390,7 +385,7 @@ function applyNightActions() {
                 players: data.players,
                 phase: 'day',
                 nightActions: {},
-                roundNumber: data.roundNumber + 1  // Increment round number here
+                roundNumber: data.roundNumber + 1
             }).then(() => {
                 setTimeout(() => {
                     document.getElementById("secretActionsContainer").style.display = "none";
@@ -505,16 +500,12 @@ function processVotes() {
         }
 
         update(roomRef, { votes: {} }).then(() => {
-            update(roomRef, { 
-                phase: 'night',
-                roundNumber: data.roundNumber + 1  // Increment round number here
-            }).then(() => {
+            update(roomRef, { phase: 'night' }).then(() => {
                 get(roomRef).then(updatedSnapshot => {
                     startNightPhase(updatedSnapshot.val());
                 });
             });
         });
-        
     });
 }
 
