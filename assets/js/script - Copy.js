@@ -109,25 +109,15 @@ function enterLobby(roomCode, playerName) {
         }
     });
 
-    let initialPlayersLoaded = false;
     onValue(ref(db, "rooms/" + roomCode + "/players"), (snapshot) => {
-        const currentPlayers = snapshot.val() || {};
-        
-        if (!initialPlayersLoaded) {
-            // First load - don't show popups for existing players
-            initialPlayersLoaded = true;
-        } else {
-            // Check for new players
-            const myName = sessionStorage.getItem("playerName");
-            Object.keys(currentPlayers).forEach(player => {
-                if (!previousPlayers[player] && player !== myName) {
-                    // Only show popup if someone else joined
-                    showPopup(`${player} joined the room!`);
-                }
-            });
+        let players = snapshot.val();
+        if (players) {
+            let newPlayers = Object.keys(players);
+            let newPlayer = newPlayers[newPlayers.length - 1];
+            if (newPlayer) {
+                showPopup(newPlayer + " joined the room!");
+            }
         }
-        
-        previousPlayers = {...currentPlayers};
     });
 
     onValue(ref(db, "rooms/" + roomCode + "/chat"), (snapshot) => {
