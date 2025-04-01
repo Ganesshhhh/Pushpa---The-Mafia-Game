@@ -539,8 +539,8 @@ function showWinScreen(title, message) {
     document.getElementById("winTitle").innerText = title;
     document.getElementById("winMessage").innerText = message;
     document.getElementById("winScreen").style.display = "block";
-    document.getElementById("gameContainer").style.display = "none";
-    document.getElementById("lobby").style.display = "none";
+    document.getElementById("votingContainer").style.display = "none";
+    document.getElementById("secretActionsContainer").style.display = "none";
 }
 
 function checkIfEliminated(player) {
@@ -552,9 +552,6 @@ function checkIfEliminated(player) {
         remove(ref(db, "rooms/" + roomCode + "/votes/" + playerName));
         
         document.getElementById("gameOver").style.display = "block";
-        document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
-        document.getElementById("votingContainer").style.display = "none";
-        document.getElementById("secretActionsContainer").style.display = "none";
         
         sessionStorage.setItem("wasEliminated", "true");
     }
