@@ -76,6 +76,18 @@ function enterLobby(roomCode, playerName) {
 
     let roomRef = ref(db, "rooms/" + roomCode);
 
+    // Add phase change listener
+    onValue(ref(db, `rooms/${roomCode}/phase`), (snapshot) => {
+        const phase = snapshot.val();
+        if (!phase) return;
+        
+        if (phase === 'night' && currentPhase !== 'night') {
+            startNightPhase();
+        } else if (phase === 'day' && currentPhase !== 'day') {
+            startDayPhase();
+        }
+    });
+
     onValue(roomRef, (snapshot) => {
         let data = snapshot.val();
         if (data) {
@@ -137,7 +149,7 @@ function enterLobby(roomCode, playerName) {
 
 function showEliminatedScreen() {
     document.getElementById("gameOver").style.display = "block";
-    document.getElementById("gameOverMessage").innerText = "You have been eliminated!";
+    document.getElementById("gameOverMessage").innerText = "Hard Luck! You have been eliminated from the game!";
     document.getElementById("votingContainer").style.display = "none";
     document.getElementById("secretActionsContainer").style.display = "none";
 }
@@ -228,19 +240,20 @@ function startGame(roles, phase) {
 }
 
 function startNightPhase(roomData = null) {
-    if (currentPhase === 'night' && actionButtonsCreated) return;
-    if (isInitializingNightPhase) return;
+    // Clear any existing buttons immediately
+    document.getElementById("secretActionsContainer").innerHTML = "";
     
-    isInitializingNightPhase = true;
+    // Reset flags
     currentPhase = 'night';
     actionButtonsCreated = false;
+    isInitializingNightPhase = false;
+    
     clearTimeout(nightPhaseTimeout);
     
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
     document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("secretActionsContainer").innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
     document.getElementById("actionButtons").style.display = "block";
     document.getElementById("secretActionsContainer").style.display = "block";
@@ -249,19 +262,15 @@ function startNightPhase(roomData = null) {
     
     fetchData.then(data => {
         if (!data || !data.roles || !data.players[playerName]) {
-            isInitializingNightPhase = false;
             if (data && !data.players[playerName]) {
                 showEliminatedScreen();
             }
             return;
         }
         
-        if (actionButtonsCreated) {
-            isInitializingNightPhase = false;
-            return;
-        }
+        // Only proceed if we're still in night phase
+        if (currentPhase !== 'night') return;
         
-        actionButtonsCreated = true;
         let role = data.roles[playerName];
         let container = document.getElementById("secretActionsContainer");
         container.innerHTML = "";
@@ -323,11 +332,8 @@ function startNightPhase(roomData = null) {
                 endNightPhase();
             }
         }, 50000);
-        
-        isInitializingNightPhase = false;
     }).catch(error => {
         console.error("Error initializing night phase:", error);
-        isInitializingNightPhase = false;
     });
 }
 
@@ -501,9 +507,10 @@ function processVotes() {
 
         update(roomRef, { votes: {} }).then(() => {
             update(roomRef, { phase: 'night' }).then(() => {
-                get(roomRef).then(updatedSnapshot => {
-                    startNightPhase(updatedSnapshot.val());
-                });
+                // Force a fresh start of night phase
+                currentPhase = 'night';
+                actionButtonsCreated = false;
+                startNightPhase();
             });
         });
     });
