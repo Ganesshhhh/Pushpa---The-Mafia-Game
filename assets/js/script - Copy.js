@@ -239,11 +239,14 @@ function startNightPhase(roomData = null) {
     let roomCode = sessionStorage.getItem("roomCode");
     let playerName = sessionStorage.getItem("playerName");
     
+    // Clear and prepare the container
+    let container = document.getElementById("secretActionsContainer");
+    container.innerHTML = "";
+    container.style.display = "block";
+    
     document.getElementById("votingContainer").innerHTML = "";
-    document.getElementById("secretActionsContainer").innerHTML = "";
     document.getElementById("phaseAnimation").innerHTML = '<img src="assets/images/nightttt.gif" alt="Night Phase">';
     document.getElementById("actionButtons").style.display = "block";
-    document.getElementById("secretActionsContainer").style.display = "block";
 
     const fetchData = roomData ? Promise.resolve(roomData) : get(ref(db, `rooms/${roomCode}`)).then(snapshot => snapshot.val());
     
@@ -263,8 +266,6 @@ function startNightPhase(roomData = null) {
         
         actionButtonsCreated = true;
         let role = data.roles[playerName];
-        let container = document.getElementById("secretActionsContainer");
-        container.innerHTML = "";
         
         Object.keys(data.players).forEach(target => {
             if (target !== playerName) {
@@ -280,7 +281,11 @@ function startNightPhase(roomData = null) {
                                 target: target 
                             }).then(() => {
                                 alert(`You will eliminate ${target} at night.`);
-                                button.disabled = true;
+                                // Disable all night action buttons after selection
+                                let buttons = container.getElementsByClassName("btn");
+                                for (let btn of buttons) {
+                                    btn.disabled = true;
+                                }
                             });
                         };
                         break;
@@ -292,7 +297,10 @@ function startNightPhase(roomData = null) {
                                 target: target 
                             }).then(() => {
                                 alert(`You will investigate ${target} at night.`);
-                                button.disabled = true;
+                                let buttons = container.getElementsByClassName("btn");
+                                for (let btn of buttons) {
+                                    btn.disabled = true;
+                                }
                             });
                         };
                         break;
@@ -304,7 +312,10 @@ function startNightPhase(roomData = null) {
                                 target: target 
                             }).then(() => {
                                 alert(`You will try to save ${target} at night.`);
-                                button.disabled = true;
+                                let buttons = container.getElementsByClassName("btn");
+                                for (let btn of buttons) {
+                                    btn.disabled = true;
+                                }
                             });
                         };
                         break;
@@ -336,6 +347,8 @@ function endNightPhase() {
     
     currentPhase = 'transition';
     clearTimeout(nightPhaseTimeout);
+    
+    // Clear the container but keep it visible during transition
     document.getElementById("secretActionsContainer").innerHTML = "";
     actionButtonsCreated = false;
     applyNightActions();
